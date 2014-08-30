@@ -10,6 +10,8 @@
 
 #include<stdio.h>
 #include<stdlib.h>
+#include<string.h>
+#include<time.h>
 
 /* Max number of elements on the input array */
 #define MAX_ELEMS 8
@@ -57,7 +59,7 @@ struct data *hop(struct data *array, int n, int h){
     /* starting index for the processing */
     int processing_start_index = n;
     /*
-     * source and destinatin indices in the array where an element has to be 
+     * source and destination indices in the array where an element has to be 
      * copied at any given point in the shift workflow
      */
     int source = 0;
@@ -79,19 +81,22 @@ struct data *hop(struct data *array, int n, int h){
              * get the source index from where data has to be copied to the
              * index position being currently processed
              */
-            source = processing_start_index - h;
+            source = destination - h;
             if(source < 0){
                 /* rollover logic */
                 source = n + source;
             }
-            /* Now copy data from source to destination */
-            memcpy((array + destination), (array + source), sizeof(struct data));
+            /* Now copy data from source to destination if source!=processing_
+             * start_index
+             */
+            if(source != processing_start_index){
+                memcpy((array + destination), (array + source), sizeof(struct data));
+                destination = source;
+            }
             /*
              * increment the number of elements that have been shifted
              */
-            if(source != processing_start_index){
-                elems_shifted++;
-            }
+            elems_shifted++;
         }while(source != processing_start_index);
         /* Now copy saved data to destination */
         memcpy((array + destination), save, sizeof(struct data));
@@ -108,6 +113,7 @@ void printarray(struct data *input, int n){
     for(index = 0; index < n; index ++){
         printf("%d\t", (input + index)->key);
     }
+    printf("\n");
 }
 
 /*
@@ -125,21 +131,22 @@ void main(){
         return;
     }
     /*
-     * get user inout
+     * get user input
      */
-    printf("Enter %d integers", MAX_ELEMS);
+    printf("Enter %d integers\n", MAX_ELEMS);
     int in = 0;
     for(in = 0; in < MAX_ELEMS; in++){
         scanf("%d", &((input + in)->key));
     }
     /* Generate a random number for the number of hops */
-    random = MAX_ELEMS - 2; 
+    srand(time(NULL));
+    random = rand() % MAX_ELEMS; 
     /* print the array before the shift */
-    printf("Before shifting the array by %d hops", random);
+    printf("Before shifting the array by %d hops\n", random);
     printarray(input, MAX_ELEMS);
     /* call the hop function */
     hop(input, MAX_ELEMS, random);
     /* print the array after the shift */
-    printf("After shifting the array by %d hops", random);
+    printf("After shifting the array by %d hops\n", random);
     printarray(input, MAX_ELEMS);
 }
