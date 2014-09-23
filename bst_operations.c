@@ -8,6 +8,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<time.h>
+#include"fifoQueue.h"
 
 /* Num of elements to be added to the tree */
 #define MAX_ELEMS 5
@@ -30,6 +31,57 @@ struct node *root = NULL;
  * generic function pointer for differnet kind of traversals
  */
 int(*traverse)(struct node*, int *, int);
+
+/*
+ * printBTree() prints the binary tree
+ * @r       root node of the binary tree
+ *
+ */
+void printBTree(struct node *r){
+    struct node *x = NULL;
+    bool maybeDone = false;
+    /* temp node to be used to print new line */
+    struct node *newline = (struct node *)malloc(sizeof(struct node));
+    if(newline == NULL){
+        printf("failed to allocate memory\n");
+        return;
+    }
+    newline->key = -1;
+    /* initialize the FIFO queue */
+    if(r != NULL){
+        add_Q(r);
+        add_Q(newline);
+    }
+    /* Execute the loop until queue is empied */
+    while((x = remove_Q()) != NULL){
+        /* found new line indicator */
+        if(x->key == -1){
+            /*
+             * if maybeDone is true, we have found second successive new line
+             * indicator
+             */
+            if(maybeDone)
+                return;
+            /*
+             * print new line, 
+             * push new line indicator,
+             * set maybeDone flag to true
+             */
+            printf("\n");
+            add_Q(newline);
+            maybeDone = true;
+            continue;
+        }
+        printf("%d\t", x->key);
+        /* set maybeDone = false and push the children on queue, if any */
+        maybeDone = false;
+        if(x->lchild != NULL)
+            add_Q(x->lchild);
+        if(x->rchild != NULL)
+            add_Q(x->rchild);
+
+    }
+}
 
 /*
  * inorder_rec()    traverses a tree inorder, using recursive implementation
@@ -155,6 +207,8 @@ void main(){
         n->rchild = NULL;
         addNodeToBst(n);
     }
+    /* print the BTree */
+    printBTree(root);
     /*
      * allocate memory for the int array of size equal to the num of nodes
      * in the tree
