@@ -4,10 +4,20 @@
  */
 #include<stdio.h>
 #include<stdlib.h>
+#include<stdbool.h>
 
 /* pointers for the head and tail of the fifo queue */
 struct element *head = NULL;
 struct element *tail = NULL;
+
+/* function decalartions for the fifo queue */
+/* adds a memory address to the fifio queue */
+int add_Q(void *);
+/* removes a memory address from the fifo queue */
+void *remove_Q();
+/* gets a memory address from the fifo queue, without removing it */
+void *get_Q();
+
 /* structure for each element of the queue */
 struct element{
     /* pointer to the data stored on fifo queue */
