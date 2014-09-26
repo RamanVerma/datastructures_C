@@ -24,13 +24,13 @@ struct st_element{
 struct st_element *top;
 
 /*
- * push()   pushes an element on to the stack
+ * push_st()   pushes an element on to the stack
  * data     :   pointer to the data to be added to the stack
  *
  * returns pointer to the data added to the stack, 
  * returns NULL in case the input was NULL, or ENOMEM
  */
-void *push(void *indata){
+void *push_st(void *indata){
     /* imput data is NULL */
     if(indata == NULL){
         return NULL;
@@ -58,12 +58,12 @@ void *push(void *indata){
 }
 
 /*
- * pop()    pops the top element from the stack
+ * pop_st()    pops the top element from the stack
  *
  * returns the data contained in the top element of the stack,
  * returns NULL for errors
  */
-void *pop(){
+void *pop_st(){
     /* empty stack */
     if(top == NULL){
         return NULL;
@@ -76,4 +76,18 @@ void *pop(){
         top->next = NULL;
     }
     return data;
+}
+
+/*
+ * top_st()    returns the data member of the element at the top of stack
+ *
+ * returns data member of the structure forming the stack, 
+ * NULL for empty stack or errors
+ */
+void *top_st(){
+    /* empty stack */
+    if(top == NULL){
+        return NULL;
+    }
+    return top->data;
 }

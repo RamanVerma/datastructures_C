@@ -75,6 +75,9 @@ void *remove_Q(){
         r = head->data;
         head = head->prev;
     }
+    /* re initialize queue variables, if needed */
+    if(head == NULL)
+        tail = NULL;
     return r;
 }
 
