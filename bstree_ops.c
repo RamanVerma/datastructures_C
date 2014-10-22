@@ -184,6 +184,56 @@ int postorder_rec(struct node *stroot, int *out, int index){
 }
 
 /*
+ * postorder_itr()    traverses a tree postorder, using iterative implem
+ * @stroot  root of the binary subtree to be traversed
+ * @out     pointer to the int array that will contain keys for all the nodes
+ *          visited
+ *
+ * the function assumes that this pointer to int has sufficient memory 
+ * allocated before it is passed to the function
+ *
+ * returns length of output array
+ *
+ * TODO remove the 0 to be passed as the third arg. it is there just to maintain
+ * common signature across traverse functions.
+ */
+int postorder_itr(struct node *stroot, int *out, int a){
+    int x = 0;
+    struct node *lvnode = NULL;
+    /* push the root element to the stack */
+    push_st((void *)stroot);
+    /* loop while the stack is not empty */
+    while(top_st() != NULL){
+        /* look at the top element of stack and process it as subtree root */
+        stroot = top_st();
+        /* 
+         * push the left node on stack, if it is not null AND it is not the 
+         * last node visited AND the last node visited is not the right child 
+         * of this node
+         */
+        if(stroot->lchild != NULL && stroot->lchild != lvnode && 
+            stroot->rchild != lvnode){
+            push_st((void *)stroot->lchild);
+            continue;
+        }
+        /* 
+         * push the right node on stack, if it is not null AND it is not the
+         * last node visited
+         */
+        if(stroot->rchild != NULL && stroot->rchild != lvnode){
+            push_st((void *)stroot->rchild);
+            continue;
+        }
+        /* set the top node as the last visited node now */
+        lvnode = stroot;
+        /* no child of this node, so pop it and process */
+        *(out + x) = *((int *)pop_st());
+        x++;
+    }
+    return x;
+}
+
+/*
  * breadth_first_search()   performs bredth firt search on the tree
  * @stroot      :   root of the binary sub tree to be searched
  * @key         :   key to be searched
@@ -332,6 +382,9 @@ void main(){
                 break;
         case 5: 
                 traverse = postorder_rec;
+                break;
+        case 6: 
+                traverse = postorder_itr;
                 break;
         case 7:
                 printf("Type in the integer key to be searched\n");
