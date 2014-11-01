@@ -234,6 +234,30 @@ int postorder_itr(struct node *stroot, int *out, int a){
 }
 
 /*
+ * preorder_rec()    traverses a tree preorder, using recursive implem
+ * @stroot  root of the binary subtree to be traversed
+ * @out     pointer to the int array that will contain keys for all the nodes
+ *          visited
+ * @index   index for the integer array, where next key will be saved
+ *
+ * returns int index for storing next element in the out array
+ *
+ * the function assumes that this pointer to int has sufficient memory 
+ * allocated before it is passed to the function
+ */
+int preorder_rec(struct node *stroot, int *out, int a){
+    /* process the root node */
+    *(out + a++) = stroot->key;
+    /* process the left child, if it exists */
+    if(stroot->lchild != NULL)
+        a = preorder_rec(stroot->lchild, out, a);
+    /* process the right child, if it exists */
+    if(stroot->rchild != NULL)
+        a = preorder_rec(stroot->rchild, out, a);
+    return a;
+}
+
+/*
  * breadth_first_search()   performs bredth firt search on the tree
  * @stroot      :   root of the binary sub tree to be searched
  * @key         :   key to be searched
@@ -379,6 +403,9 @@ void main(){
                 break;
         case 2: 
                 traverse = inorder_itr;
+                break;
+        case 3: 
+                traverse = preorder_rec;
                 break;
         case 5: 
                 traverse = postorder_rec;
