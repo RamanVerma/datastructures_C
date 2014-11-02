@@ -258,6 +258,41 @@ int preorder_rec(struct node *stroot, int *out, int a){
 }
 
 /*
+ * preorder_itr()    traverses a tree preorder, using iterative implem
+ * @stroot  root of the binary subtree to be traversed
+ * @out     pointer to the int array that will contain keys for all the nodes
+ *          visited
+ *
+ * the function assumes that this pointer to int has sufficient memory 
+ * allocated before it is passed to the function
+ *
+ * returns length of output array
+ *
+ * TODO remove the 0 to be passed as the third arg. it is there just to maintain
+ * common signature across traverse functions.
+ */
+int preorder_itr(struct node *stroot, int *out, int a){
+    a = 0;
+    struct node *n = NULL;
+    /* checking the corner case when subroot is NULL */
+    if(stroot == NULL)
+        return 0;
+    /* initialize the stack */
+    push_st((void *)stroot);
+    /* process the entries in the stack, till it gets empty */
+    while((n = (struct node *)pop_st()) != NULL){
+        /* add the key to output array */
+        *(out + a++) = n->key;
+        /* push the current root's children to the stack, if they exist */
+        if(n->rchild != NULL)
+            push_st((void *)n->rchild);
+        if(n->lchild != NULL)
+            push_st((void *)n->lchild);
+    }    
+    return a;
+}
+
+/*
  * breadth_first_search()   performs bredth firt search on the tree
  * @stroot      :   root of the binary sub tree to be searched
  * @key         :   key to be searched
@@ -281,6 +316,46 @@ struct node *breadth_first_search(struct node *stroot, int key){
         add_Q(x->rchild);
     }
     return x;
+}
+
+/*
+ * depth_first_search()   performs depth first search on the tree
+ * @stroot      :   root of the binary sub tree to be searched
+ * @key         :   key to be searched
+ *
+ * depth first search is very similar to preorder traversal. The only
+ * difference being that we traverse till a value is not found. Depth
+ * first search is essentially a tree traversal where we travel from
+ * root to the leaves down a single path at a time, and then cover the
+ * next untraversed path closely similar to the current one.
+ * So, it translates into a pre/in/post order traversal. preorder
+ * traversal will be the most efficient because we compare a node while
+ * we are at it, and can avoid un necessary traversals.
+ *
+ * returns the pointer to data, or NULL if key is not found or error
+ */
+struct node *depth_first_search(struct node *stroot, int key){
+    /* what if root is NULL */
+    if(stroot == NULL)
+        return NULL;
+    struct node *n = NULL;
+    struct node *m = NULL;
+    /* push the rot on the stack */
+    push_st((void *)stroot);
+    /* run through this loop till the stack is empty */
+    while((n = (struct node *)pop_st()) != NULL){
+        /* if key is found, exit the loop */
+        if (n->key == key){
+            m = n;
+            break;
+        }
+        /* push the current root's children to the stack, if they exist */
+        if(n->rchild != NULL)
+            push_st((void *)n->rchild);
+        if(n->lchild != NULL)
+            push_st((void *)n->lchild);
+    }
+    return m;
 }
 
 /*
@@ -338,7 +413,8 @@ void printMenu(){
     printf("5. postorder (recursive implementation)\n");
     printf("6. postorder (iterative implementation)\n");
     printf("7. breadth first search\n");
-    printf("8. compare binary trees\n");
+    printf("8. depth first search\n");
+    printf("9. compare binary trees\n");
 }
 
 /*
@@ -407,6 +483,9 @@ void main(){
         case 3: 
                 traverse = preorder_rec;
                 break;
+        case 4: 
+                traverse = preorder_itr;
+                break;
         case 5: 
                 traverse = postorder_rec;
                 break;
@@ -423,6 +502,15 @@ void main(){
                     printf("Not found");
                 break;
         case 8: 
+                printf("Type in the integer key to be searched\n");
+                scanf("%d",&key);
+                n = depth_first_search(root, key);
+                if(n != NULL)
+                    printf("%d\n",n->key);
+                else
+                    printf("Not found");
+                break;
+        case 9: 
                 break;
         default:
                 return;
