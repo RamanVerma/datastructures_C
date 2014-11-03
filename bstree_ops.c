@@ -27,6 +27,11 @@ struct node{
 
 /* root node for the tree */
 struct node *root = NULL;
+struct node *root2 = NULL;
+
+/* denotes the top element of the stack */
+struct st_element *top;
+struct st_element *top2;
 
 /*
  * generic function pointer for differnet kind of traversals
@@ -34,11 +39,11 @@ struct node *root = NULL;
 int(*traverse)(struct node*, int *, int);
 
 /*
- * printBTree() prints the binary tree
+ * printBSTree() prints the binary tree
  * @r       root node of the binary tree
  *
  */
-void printBTree(struct node *r){
+void printBSTree(struct node *r){
     struct node *x = NULL;
     bool maybeDone = false;
     /* temp node to be used to print new line */
@@ -138,7 +143,7 @@ int inorder_itr(struct node *stroot, int *out, int a){
     do{
         /* push all nodes on stack till they have lchild */
         for(;(x->lchild != NULL) && (x != lcvisited);x = x->lchild){
-            push_st(x);
+            push_st(top, x);
         }
         /* process the last node that wasn't pushed on stack */
         printf("%d\t",x->key);
@@ -146,14 +151,14 @@ int inorder_itr(struct node *stroot, int *out, int a){
          * lcvisited = (top node of stack), if x == (top of stack)->lchild
          * so that we do not trace the lchildren for this node again.
          */
-        if((top_st() != NULL) && (x == ((struct node *)top_st())->lchild)){
-            lcvisited = (struct node *)top_st();
+        if((top_st(top) != NULL) && (x == ((struct node *)top_st(top))->lchild)){
+            lcvisited = (struct node *)top_st(top);
         }
         /* push its right child on stack */
         if(x->rchild != NULL){
-            push_st(x->rchild);
+            push_st(top, x->rchild);
         }
-    }while((x = (struct node *)pop_st()) != NULL);
+    }while((x = (struct node *)pop_st(top)) != NULL);
     return 0;
 }
 
@@ -201,11 +206,11 @@ int postorder_itr(struct node *stroot, int *out, int a){
     int x = 0;
     struct node *lvnode = NULL;
     /* push the root element to the stack */
-    push_st((void *)stroot);
+    push_st(top, (void *)stroot);
     /* loop while the stack is not empty */
-    while(top_st() != NULL){
+    while(top_st(top) != NULL){
         /* look at the top element of stack and process it as subtree root */
-        stroot = top_st();
+        stroot = top_st(top);
         /* 
          * push the left node on stack, if it is not null AND it is not the 
          * last node visited AND the last node visited is not the right child 
@@ -213,7 +218,7 @@ int postorder_itr(struct node *stroot, int *out, int a){
          */
         if(stroot->lchild != NULL && stroot->lchild != lvnode && 
             stroot->rchild != lvnode){
-            push_st((void *)stroot->lchild);
+            push_st(top, (void *)stroot->lchild);
             continue;
         }
         /* 
@@ -221,13 +226,13 @@ int postorder_itr(struct node *stroot, int *out, int a){
          * last node visited
          */
         if(stroot->rchild != NULL && stroot->rchild != lvnode){
-            push_st((void *)stroot->rchild);
+            push_st(top, (void *)stroot->rchild);
             continue;
         }
         /* set the top node as the last visited node now */
         lvnode = stroot;
         /* no child of this node, so pop it and process */
-        *(out + x) = *((int *)pop_st());
+        *(out + x) = *((int *)pop_st(top));
         x++;
     }
     return x;
@@ -278,16 +283,16 @@ int preorder_itr(struct node *stroot, int *out, int a){
     if(stroot == NULL)
         return 0;
     /* initialize the stack */
-    push_st((void *)stroot);
+    push_st(top, (void *)stroot);
     /* process the entries in the stack, till it gets empty */
-    while((n = (struct node *)pop_st()) != NULL){
+    while((n = (struct node *)pop_st(top)) != NULL){
         /* add the key to output array */
         *(out + a++) = n->key;
         /* push the current root's children to the stack, if they exist */
         if(n->rchild != NULL)
-            push_st((void *)n->rchild);
+            push_st(top, (void *)n->rchild);
         if(n->lchild != NULL)
-            push_st((void *)n->lchild);
+            push_st(top, (void *)n->lchild);
     }    
     return a;
 }
@@ -341,9 +346,9 @@ struct node *depth_first_search(struct node *stroot, int key){
     struct node *n = NULL;
     struct node *m = NULL;
     /* push the rot on the stack */
-    push_st((void *)stroot);
+    push_st(top, (void *)stroot);
     /* run through this loop till the stack is empty */
-    while((n = (struct node *)pop_st()) != NULL){
+    while((n = (struct node *)pop_st(top)) != NULL){
         /* if key is found, exit the loop */
         if (n->key == key){
             m = n;
@@ -351,24 +356,76 @@ struct node *depth_first_search(struct node *stroot, int key){
         }
         /* push the current root's children to the stack, if they exist */
         if(n->rchild != NULL)
-            push_st((void *)n->rchild);
+            push_st(top, (void *)n->rchild);
         if(n->lchild != NULL)
-            push_st((void *)n->lchild);
+            push_st(top, (void *)n->lchild);
     }
     return m;
 }
 
 /*
+ * compareTrees()   compares two trees, given their root nodes
+ * @stroot1     :   root of the first subtree
+ * @stroot2     :   root of the second subtree
+ *
+ * two subtrees are considered similar if they produce same 
+ * result on preorder traversal
+ *
+ * returns 0 if the trees are similar, 1 otherwise
+ */
+int compareTrees(struct node *stroot1, struct node *stroot2){
+    /* cases when one or both root nodes are NULL */
+    if(stroot1 == NULL && stroot2 == NULL)
+        return 0;
+    if((stroot1 == NULL && stroot2 != NULL) || (stroot1 != NULL && stroot2 == NULL))
+        return 1;
+    /* both the roots nodes are NOT NULL */
+    struct node *n = NULL;
+    struct node *m = NULL;
+    /* compare the root nodes and push them on respective stacks, if equal */
+    if(stroot1->key != stroot2->key){
+        return 1;
+    } else {
+        push_st(top, (void *)stroot1);
+        push_st(top2, (void *)stroot2);
+    }
+    /* process each node of both the trees, while traversing them */
+    while(1){
+        n = pop_st(top);
+        m = pop_st(top2);
+        /* nodes from both the stacks are NULL, stacks empty */
+        if(n == NULL && m == NULL)
+            return 0;
+        /* node from one of the stacks os NULL, mismatch */
+        if((n == NULL && m != NULL) || (n != NULL && m == NULL))
+            return 1;
+        /* keys dont match */
+        if(n->key != m->key)
+            return 1;
+        /* push the current root's children to the stack, if they exist */
+        if(n->rchild != NULL)
+            push_st(top, (void *)n->rchild);
+        if(n->lchild != NULL)
+            push_st(top, (void *)n->lchild);
+        if(m->rchild != NULL)
+            push_st(top2, (void *)m->rchild);
+        if(m->lchild != NULL)
+            push_st(top2, (void *)m->lchild);
+    }
+}
+
+/*
  * addNodeToBst()   adds a node to a binary search tree
+ * @root     root node of the tree
  * @n       new node to be added to the bst
  *
- * returns void
+ * returns pointer to the root of the tree
  */
-void addNodeToBst(struct node *n){
+struct node *addNodeToBst(struct node *root, struct node *n){
     /* empty tree */
     if(root == NULL){
         root = n;
-        return;
+        return root;
     }
     struct node *subtreeRoot = root;
     while(1){
@@ -396,6 +453,7 @@ void addNodeToBst(struct node *n){
             }
         }
     }
+    return root;
 }
 
 /*
@@ -418,6 +476,35 @@ void printMenu(){
 }
 
 /*
+ * makeBSTree()   make a binary search tree
+ * @root    :   pointer to the root node
+ *
+ * returns a pointer to the root node, or NULL in case of an error
+ */
+struct node *makeBSTree(struct node *r){
+    struct node *n = NULL;
+    int x = 0;
+    for(x = 0;x < MAX_ELEMS; x++){
+        /*
+         * allocate memory to the node structure
+         */
+        n = (struct node *)malloc(sizeof(struct node));
+        if(n == NULL){
+            printf("failed to allocate memory\n");
+            return NULL;
+        }
+        /*
+         * generate a random key and initialize the left and right children
+         */
+        n->key = rand() % 100;
+        n->lchild = NULL;
+        n->rchild = NULL;
+        r = addNodeToBst(r, n);
+    }
+    return r;
+}
+
+/*
  * main function
  */
 void main(){
@@ -427,29 +514,14 @@ void main(){
     int option;
     srand(time(NULL));
     int key = -1;
+    int toss = 0;
+    int x = 0;
     /*
      * create a tree
      */
-    int x = 0;
-    for(x = 0;x < MAX_ELEMS; x++){
-        /*
-         * allocate memory to the node structure
-         */
-        n = (struct node *)malloc(sizeof(struct node));
-        if(n == NULL){
-            printf("failed to allocate memory\n");
-            return;
-        }
-        /*
-         * generate a random key and initialize the left and right children
-         */
-        n->key = rand() % 100;
-        n->lchild = NULL;
-        n->rchild = NULL;
-        addNodeToBst(n);
-    }
+    root = makeBSTree(root);
     /* print the BTree */
-    printBTree(root);
+    printBSTree(root);
     /*
      * select the kind of traversal, or search method to be used
      */
@@ -458,7 +530,7 @@ void main(){
         scanf("%i", &option);
         if(option == 0)
             return;
-        else if(option >=1 && option <=8)
+        else if(option >= 1 && option <= 9)
             break;
     }
     /*
@@ -474,24 +546,31 @@ void main(){
      * now hook into the correct kind of traversal function and call it
      */
     switch (option){
+        /* inorder traversal - recursive */
         case 1: 
                 traverse = inorder_rec;
                 break;
+        /* inorder traversal - iterative */
         case 2: 
                 traverse = inorder_itr;
                 break;
+        /* preorder traversal - recursive */
         case 3: 
                 traverse = preorder_rec;
                 break;
+        /* preorder traversal - iterative */
         case 4: 
                 traverse = preorder_itr;
                 break;
+        /* postorder traversal - recursive */
         case 5: 
                 traverse = postorder_rec;
                 break;
+        /* postorder traversal - iterative */
         case 6: 
                 traverse = postorder_itr;
                 break;
+        /* Breadth First Search */
         case 7:
                 printf("Type in the integer key to be searched\n");
                 scanf("%d",&key);
@@ -501,6 +580,7 @@ void main(){
                 else
                     printf("Not found");
                 break;
+        /* Depth First Search */
         case 8: 
                 printf("Type in the integer key to be searched\n");
                 scanf("%d",&key);
@@ -510,7 +590,16 @@ void main(){
                 else
                     printf("Not found");
                 break;
+        /* Compare two trees */
         case 9: 
+                /* toss : 0 = make similar tree, 1 = make new tree */
+                toss = rand() % 2;
+                root2 = ((toss == 0) ? root : makeBSTree(root2));
+                /* Print the second tree */
+                printf("Here's the second BSTree\n");
+                printBSTree(root2);
+                /* do the comparison and print the result as a statement */
+                printf("Trees are %s similar\n", (compareTrees(root, root2) == 0 ) ? "" : "NOT" );
                 break;
         default:
                 return;
