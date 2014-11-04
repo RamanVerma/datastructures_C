@@ -10,6 +10,7 @@
 #include<time.h>
 #include"fifoQueue.h"
 #include"stack.h"
+#include<string.h>
 
 /* Num of elements to be added to the tree */
 #define MAX_ELEMS 5
@@ -415,6 +416,31 @@ int compareTrees(struct node *stroot1, struct node *stroot2){
 }
 
 /*
+ * copyBSTree()     makes a copy of the BSTree
+ * @root        :   root node of the binary search tree to be copied
+ *
+ * returns the root node of the copy
+ */
+struct node *copyBSTree(struct node *root){
+    /* condition for recursion to unwind */
+    if(root == NULL)
+        return NULL;
+    /* allocate memory for a new node */
+    struct node *copy = (struct node *)malloc(sizeof(struct node));
+    if(copy == NULL){
+        printf("No memory. Will exit\n");
+        return NULL;
+    }
+    /* process the left child recursively */
+    copy->lchild = copyBSTree(root->lchild);
+    /* process the right child recursively */
+    copy->rchild = copyBSTree(root->rchild);
+    /* copy the data */
+    memcpy(&copy->key, &root->key, sizeof(root->key));
+    return copy;
+}
+
+/*
  * addNodeToBst()   adds a node to a binary search tree
  * @root     root node of the tree
  * @n       new node to be added to the bst
@@ -461,6 +487,7 @@ struct node *addNodeToBst(struct node *root, struct node *n){
  *              techniques
  */
 void printMenu(){
+    printf("=============================================\n");
     printf("Choose a number between 0 and 6, to select the traversal technique "
            "and implementation\n");
     printf("0. exit\n");
@@ -473,6 +500,7 @@ void printMenu(){
     printf("7. breadth first search\n");
     printf("8. depth first search\n");
     printf("9. compare binary trees\n");
+    printf("10. copy a tree\n");
 }
 
 /*
@@ -520,6 +548,8 @@ void main(){
      * create a tree
      */
     root = makeBSTree(root);
+    printf("=============================================\n");
+    printf("------------------Working tree---------------\n");
     /* print the BTree */
     printBSTree(root);
     /*
@@ -530,7 +560,7 @@ void main(){
         scanf("%i", &option);
         if(option == 0)
             return;
-        else if(option >= 1 && option <= 9)
+        else if(option >= 1 && option <= 10)
             break;
     }
     /*
@@ -542,6 +572,7 @@ void main(){
             printf("failed to allocate memory\n");
             return;
     }
+    printf("=============================================\n");
     /*
      * now hook into the correct kind of traversal function and call it
      */
@@ -600,6 +631,12 @@ void main(){
                 printBSTree(root2);
                 /* do the comparison and print the result as a statement */
                 printf("Trees are %s similar\n", (compareTrees(root, root2) == 0 ) ? "" : "NOT" );
+                break;
+        /* Copy a tree */
+        case 10:
+                root2 = copyBSTree(root);
+                printf("Here's the copied bstree\n");
+                printBSTree(root2);
                 break;
         default:
                 return;
