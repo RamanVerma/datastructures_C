@@ -483,6 +483,96 @@ struct node *addNodeToBst(struct node *root, struct node *n){
 }
 
 /*
+ * delNode()    deletes a node from the bstree
+ * @r       :   root of the bstree
+ * @key     :   key of the node to be located and deleted
+ *
+ * returns the root of the changed bstree
+ * node not found is not treated as an error condition
+ */
+struct node *delNode(struct node *r, int key){
+    struct node *p1 = NULL;
+    struct node *p2 = NULL;
+    struct node *n1 = r;
+    struct node *n2 = NULL;
+    /* search the node to be deleted */
+    while(n1->lchild || n1->rchild){
+        if(n1->key == key)
+            break;
+        /* we need to keep a pointer to the parent of the node to be deleted */
+        p1 = n1;
+        n1 = (n1->key < key ? n1->rchild : n1->lchild);
+        if(!n1)
+            break;
+    }
+    /* node not found, return original root */
+    if((!n1) || (n1->key != key))
+        return r;
+    /* find successor node and its parent */
+    n2 = n1->rchild;
+    p2 = n1;
+    while(n2 && n2->lchild){
+        p2 = n2;
+        n2 = n2->lchild;
+    }
+    /* special case: no successor node. So, find predecesor */
+    if(!n2){
+        n2 = n1->lchild;
+        while(n2 && n2->rchild){
+            p2 = n2;
+            n2 = n2->rchild;
+        }
+    }
+    /* special case: node being deleted is a leaf, so successor/predecessor */
+    if(!n2){
+        /* special case: you are deleting the only node in the tree, i.e root */
+        if(!p1){
+            r = NULL;
+        }else if(p1->lchild == n1){
+            p1->lchild = NULL;
+        }else{
+            p1->rchild == NULL;
+        }
+        free(n1);
+        return r;
+    }
+    /* 
+     * rewire the parent of the replacement node, if it is not the node being 
+     * deleted 
+     */
+    if(p2 != n1){
+        if(p2->lchild == n2)
+            p2->lchild = n2->rchild;
+        else
+            p2->rchild = n2->lchild;
+    }
+    /* replace the successor/predecessor for the node to be deleted */
+    n2->lchild = n1->lchild;
+    n2->rchild = n1->rchild;
+    /* 
+     * check for a loop being created, if node being deleted is parent to its 
+     * successor/predecessor node 
+     */
+    if(n2->lchild == n2)
+        n2->lchild = NULL;
+    else if(n2->rchild == n2)
+        n2->rchild = NULL;
+    /* rewire the parent of the node being deleted */
+    if(p1){
+        if(p1->lchild == n1)
+            p1->lchild = n2;
+        else
+            p1->rchild = n2;
+    }else{
+        /* special case: we deleted the root */
+        r = n2;
+    }
+    /* free memory for the node that has been deleted */
+    free(n1);
+    return r;
+}
+
+/*
  * printMenu()  prints a menu for user to choose among various traversal 
  *              techniques
  */
@@ -501,6 +591,7 @@ void printMenu(){
     printf("8. depth first search\n");
     printf("9. compare binary trees\n");
     printf("10. copy a tree\n");
+    printf("11. delete a node\n");
 }
 
 /*
@@ -560,7 +651,7 @@ void main(){
         scanf("%i", &option);
         if(option == 0)
             return;
-        else if(option >= 1 && option <= 10)
+        else if(option >= 1 && option <= 11)
             break;
     }
     /*
@@ -636,6 +727,14 @@ void main(){
         case 10:
                 root2 = copyBSTree(root);
                 printf("Here's the copied bstree\n");
+                printBSTree(root2);
+                break;
+        /* Delete a node */
+        case 11:
+                printf("Type in the integer key for the node to be deleted\n");
+                scanf("%d",&key);
+                root2 = delNode(root, key);
+                printf("Here's the new bstree\n");
                 printBSTree(root2);
                 break;
         default:
