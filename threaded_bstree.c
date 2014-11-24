@@ -13,6 +13,7 @@
  */
 
 #include<stdio.h>
+#include<stdlib.h>
 #include"stack.h"
 #include"fifoQueue.h"
 #include"time.h"
@@ -20,6 +21,8 @@
 /* max number of elements for the threaded bstree */
 #define MAX_ELEMS 10
 
+/* top element of the stack to be used in code */
+struct st_element *top;
 /* threaded node structure for bstree */
 struct threaded_node{
     /* key element of the node */
@@ -32,8 +35,7 @@ struct threaded_node{
     int isrchild;
 };
 
-/* top element for the stack */
-struct st_element *top;
+
 /* typedef threaded_node for a simpler name */
 typedef struct threaded_node tnode;
 
@@ -46,8 +48,11 @@ typedef struct threaded_node tnode;
  * return nothing
  */
 void printTbstree(tnode *h){
-    if(!h || !h->lpointer)
+    top = NULL;
+    if(!h || !h->lpointer){
+        printf("Empty threaded binary tree\n");
         return;
+    }
     /* create a place holder node to represent new line */
     tnode *newline = (tnode *)malloc(sizeof(sizeof(tnode)));
     if(!newline){
@@ -55,6 +60,7 @@ void printTbstree(tnode *h){
         return;
     }
     newline->key = -1;
+    int alreadyPrintedANewline = 0;
     /* root node is pointed to by head's left child */
     tnode *a = h->lpointer;
     /* add root and a new line place holder to the fifo Queue */
@@ -64,27 +70,37 @@ void printTbstree(tnode *h){
     while(a=remove_Q()){
         /* if the retrieved node is the new line placeholder */
         if(a->key == -1){
-            printf("\n");
+            if(!alreadyPrintedANewline){
+                printf("\n");
+                alreadyPrintedANewline = 1;
+            }
         }else{
             /* got a valid node from the tree */
             printf("%d\t", a->key);
+            alreadyPrintedANewline = 0;
             /* add this node's left and right children(if any) to fifo Queue */
             if(a->islchild)
                 add_Q(a->lpointer);
             if(a->isrchild)
                 add_Q(a->rpointer);
+            add_Q((void *)newline);
             /* add this node to a stack, if it has a thread */
             if(!a->islchild || !a->isrchild)
-                push_st(top, a);
+                top = push_st(top, a);
         }
     }
+    struct st_element *top1 = top;
     /* Now process the stack structure for nodes with threads */
-    while(a=pop_st(top)){
-        if(!a->islchild)
-            printf("Node %d : Predecessor Node : %d\n", a->key, a->lpointer->key);
-        if(!a->isrchild)
-            printf("Node %d : Successor Node : %d\n", a->key, a->rpointer->key);
+    while(top1 && top1->data){
+        newline = (tnode *)top1->data;
+        top1 = movetop_st(top1);
+        if(!newline->islchild)
+            printf("Node %d : Predecessor Node : %d\n", newline->key, newline->lpointer->key);
+        if(!newline->isrchild)
+            printf("Node %d : Successor Node : %d\n", newline->key, newline->rpointer->key);
     }
+    free(newline);
+    free_st(top);
     return;
 }
 
@@ -99,12 +115,15 @@ void printTbstree(tnode *h){
  */
 tnode *findSuccessor(tnode *n, struct st_element *top){
     tnode *p = NULL;
+    struct st_element *top1 = top;
     /* run thru the loop until stack is not empty */
-    while(p=pop_st(top)){
+    while(top1 && top1->data){
+        p = (tnode *)top1->data;
         /* condition for predecessor: current node is left child of parent */
         if(p->lpointer == n)
             break;
         n = p;
+        top1=movetop_st(top1);
     }
     /* if we reached here, there is no predecessor */
     return p;
@@ -121,12 +140,15 @@ tnode *findSuccessor(tnode *n, struct st_element *top){
  */
 tnode *findPredecessor(tnode *n, struct st_element *top){
     tnode *p = NULL;
+    struct st_element *top1 = top;
     /* run thru the loop until stack is not empty */
-    while(p=pop_st(top)){
+    while(top1 && top1->data){
+        p = (tnode *)top1->data;
         /* condition for predecessor: current node is right child of parent */
         if(p->rpointer == n)
             break;
         n = p;
+        top1=movetop_st(top1);
     }
     /* if we reached here, there is no predecessor */
     return p;
@@ -140,17 +162,9 @@ tnode *findPredecessor(tnode *n, struct st_element *top){
  * returns a pointer to the head of the tree
  */
 tnode *addNode(tnode *h, tnode *n){
-    /* special case: head is NULL OR root is NULL */
-    if(!h || !h->lpointer){
-        /* head is NULL */
-        if(!h){
-            /* allocate head node */
-            h = (tnode *)malloc(sizeof(tnode));
-            if(!h){
-                printf("No memory.\n");
-                return NULL;
-            }
-        }
+    top = NULL;
+    /* special case: root is NULL */
+    if(!h->lpointer){
         h->lpointer = n;
         h->islchild = 1;
         h->isrchild = 0;
@@ -160,16 +174,19 @@ tnode *addNode(tnode *h, tnode *n){
         n->isrchild = 0;
         n->lpointer = h;
         n->rpointer = h;
+        free_st(top);
         return h;
     }
     /* traverse thru the bstree to find a place to insert the new node */
     tnode *a = h->lpointer;
     while(1){
         /* if found a match, just return */
-        if(a->key == n->key)
+        if(a->key == n->key){
+            free_st(top);
             return h;
+        }
         /* push the current node on a stack */
-        push_st(top, (void *)a);
+        top = push_st(top, (void *)a);
         if(a->key < n->key){
             if(a->isrchild)
                     a = a->rpointer;
@@ -186,7 +203,7 @@ tnode *addNode(tnode *h, tnode *n){
      * by now, we have reached the correct place for the new node in the 
      * threaded bstree structure. push the new node on stack.
      */
-    push_st(top, (void *)n);
+    top = push_st(top, (void *)n);
     if(a->key > n->key){
         a->islchild = 1;
         a->lpointer = n;
@@ -203,37 +220,7 @@ tnode *addNode(tnode *h, tnode *n){
     n->rpointer = findSuccessor(n, top);
     if(!n->rpointer)
         n->rpointer = h;
-    return h;
-}
-
-/*
- * makeTbstree()   make a threaded binary search tree
- * @h       :   pointer to the head node
- *
- * returns a pointer to the head node, or NULL in case of an error
- */
-tnode *makeTbstree(tnode *h){
-    tnode *n = NULL;
-    int x = 0;
-    for(x = 0;x < MAX_ELEMS; x++){
-        /*
-         * allocate memory to the node structure
-         */
-        n = (tnode *)malloc(sizeof(tnode));
-        if(!n){
-            printf("failed to allocate memory\n");
-            return NULL;
-        }
-        /*
-         * generate a random key and initialize the left and right children
-         */
-        n->key = rand() % 100;
-        n->islchild = 0;
-        n->isrchild = 0;
-        n->lpointer = NULL;
-        n->rpointer = NULL;
-        h = addNode(h, n);
-    }
+    free_st(top);
     return h;
 }
 
@@ -255,7 +242,27 @@ void main(){
     /*
      * create a threaded bstree
      */
-    h = makeTbstree(h);
+    tnode *n = NULL;
+    int x = 0;
+    for(x = 0;x < MAX_ELEMS; x++){
+        /*
+         * allocate memory to the node structure
+         */
+        n = (tnode *)malloc(sizeof(tnode));
+        if(!n){
+            printf("failed to allocate memory\n");
+            return;
+        }
+        /*
+         * generate a random key and initialize the left and right children
+         */
+        n->key = rand() % 100;
+        n->islchild = 0;
+        n->isrchild = 0;
+        n->lpointer = NULL;
+        n->rpointer = NULL;
+        h = addNode(h, n);
+    }
     printf("=============================================\n");
     printf("------------------Working tree---------------\n");
     /* print the Threaded BSTree */
