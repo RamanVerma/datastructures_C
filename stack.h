@@ -8,6 +8,7 @@
  */
 #include<stdio.h>
 #include<stdlib.h>
+#include<string.h>
 
 /*
  * structure to hold the elements of the stack
@@ -20,19 +21,16 @@ struct st_element{
     struct st_element *prev;
 };
 
-/* denotes the top element of the stack */
-//struct st_element *top;
-
 /*
  * push_st()   pushes an element on to the stack
  * top      :   pointer to the top of the stack
  * data     :   pointer to the data to be added to the stack
- *
- * returns pointer to the data added to the stack, 
- * returns NULL in case the input was NULL, or ENOMEM
+ * 
+ * returns pointer to the top of the stack, 
+ * returns NULL in case ENOMEM
  */
-void *push_st(struct st_element *top, void *indata){
-    /* imput data is NULL */
+struct st_element *push_st(struct st_element *top, void *indata){
+    /* input data is NULL */
     if(indata == NULL){
         return NULL;
     }
@@ -47,37 +45,59 @@ void *push_st(struct st_element *top, void *indata){
     new->data = indata;
     new->prev = NULL;
     new->next = NULL;
-    /* no element in the stack yet */
+    /* top element is NULL */
     if(top == NULL){
         top = new;
-        return top->data;
+        return top;
     }
     top->next = new;
     new->prev = top;
     top = new;
-    return top->data;
+    return top;
 }
 
 /*
  * pop_st()    pops the top element from the stack
  * top      :   pointer to the top of the stack
+ * void *   :   void pointer that will point to the data being popped
  *
- * returns the data contained in the top element of the stack,
+ * returns the top element of the stack
  * returns NULL for errors
  */
-void *pop_st(struct st_element *top){
+struct st_element *pop_st(struct st_element *top, void *d){
     /* empty stack */
-    if(top == NULL){
+    if(!top || !d || !top->data){
         return NULL;
     }
     /* store a pointer to the data */
-    void *data = top->data;
+    memcpy(d, top->data, sizeof(d));
     /* move the top pointer */
     top = top->prev;
     if(top != NULL){
         top->next = NULL;
     }
-    return data;
+    return top;
+}
+
+/*
+ * movetop_st()    moves the top element of the stack to the prev 
+ *                 element
+ * top      :   pointer to the top of the stack
+ *
+ * returns the top element of the stack
+ * returns NULL for errors
+ */
+struct st_element *movetop_st(struct st_element *top){
+    /* empty stack */
+    if(!top){
+        return NULL;
+    }
+    /* move the top pointer */
+    top = top->prev;
+    if(top != NULL){
+        top->next = NULL;
+    }
+    return top;
 }
 
 /*
@@ -93,4 +113,28 @@ void *top_st(struct st_element *top){
         return NULL;
     }
     return top->data;
+}
+
+/*
+ * free_st()    frees up the memory occupied by a stack
+ * top      :   pointer to the top of the stack
+ *
+ */
+void *free_st(struct st_element *top){
+    struct st_element *a = NULL;
+    /* empty stack */
+    if(top == NULL){
+        return NULL;
+    }
+    /* move the top pointer */
+    while(top){
+        a = top;
+        top = top->prev;
+        /* WE DO NOT FREE DATA BECAUSE THE CALLING PROGRAM MAY NEED IT.
+         * WE DO NOT HAVE ANY RIGHT OVER THAT DATA.
+         * WE JUST DELETE OUR OWN INFRASTRUCTURE
+         */
+        free(a);
+    }
+    return;
 }
